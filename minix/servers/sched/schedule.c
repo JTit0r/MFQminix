@@ -12,11 +12,15 @@
 #include <assert.h>
 #include <minix/com.h>
 #include <machine/archtypes.h>
+#include "kernel/proc.h"		//constantes das filas
 
+static timer_t schedule_timer;
 static unsigned balance_timeout;
 
-#define BALANCE_TIMEOUT	5 /* how often to balance queues in seconds */
+//tempo entre balanceamentos (5 -> 10)
+#define BALANCE_TIMEOUT	10 /* how often to balance queues in seconds */
 
+static void balance_queues(struct timer *tp);
 static int schedule_process(struct schedproc * rmp, unsigned flags);
 
 #define SCHEDULE_CHANGE_PRIO	0x1
@@ -84,6 +88,9 @@ static void pick_cpu(struct schedproc * proc)
  *				do_noquantum				     *
  *===========================================================================*/
 
+//Para os processos entre as filas 16 e 18, aumentamos a prioridade em 1 assim 
+//que seu quantum expirar. Para os processos na fila 18, trocamos a prioridade
+//para 16. Em todas as outras filas usaremos a politica padrao
 int do_noquantum(message *m_ptr)
 {
 	register struct schedproc *rmp;
@@ -96,9 +103,29 @@ int do_noquantum(message *m_ptr)
 	}
 
 	rmp = &schedproc[proc_nr_n];
-	if (rmp->priority < MIN_USER_Q) {
-		rmp->priority += 1; /* lower priority */
+	if((rmp->priority >= MAX_USER_Q)&&(rmp->priority <= MIN_USER_Q)){
+		rmp->quantum += 1;
+		if(rmp->quantum == 5){
+			rmp->priority = USER_Q;
+			printf("Processo %d consumiu Quantum 5 e Prioridade %d\n", rmp->endpoint, rmp->priority);
+
+		}else if(rmp->quantum == 15){
+			rmp->priority = MIN_USER_Q;
+			printf("Processo %d consumiu Quantum 10 e Prioridade %d\n", rmp->endpoint, rmp->priority);
+
+		}else if(rmp->quantum == 35){
+			rmp->quantum = 0;
+			rmp->priority = MAX_USER_Q
+			printf("Processo %d consumiu Quantum 20 e Prioridade %d\n", rmp->endpoint, rmp->priority);
+		}
 	}
+	else if(rmp->priority < MAX_USER_Q - 1){
+		rmp->priority += 1; //demais filas, apenas diminuir prioridade
+	}
+
+	//if (rmp->priority < MIN_USER_Q) {
+	//	rmp->priority += 1; /* lower priority */
+	//}
 
 	if ((rv = schedule_process_local(rmp)) != OK) {
 		return rv;
@@ -137,6 +164,8 @@ int do_stop_scheduling(message *m_ptr)
 /*===========================================================================*
  *				do_start_scheduling			     *
  *===========================================================================*/
+
+//inicializando as variaveis, incluindo o quantum
 int do_start_scheduling(message *m_ptr)
 {
 	register struct schedproc *rmp;
@@ -161,6 +190,7 @@ int do_start_scheduling(message *m_ptr)
 	rmp->endpoint     = m_ptr->m_lsys_sched_scheduling_start.endpoint;
 	rmp->parent       = m_ptr->m_lsys_sched_scheduling_start.parent;
 	rmp->max_priority = m_ptr->m_lsys_sched_scheduling_start.maxprio;
+	rmp->quantum = 0;
 	if (rmp->max_priority >= NR_SCHED_QUEUES) {
 		return EINVAL;
 	}
@@ -204,7 +234,7 @@ int do_start_scheduling(message *m_ptr)
 				&parent_nr_n)) != OK)
 			return rv;
 
-		rmp->priority = schedproc[parent_nr_n].priority;
+		rmp->priority = MAX_USER_Q;
 		rmp->time_slice = schedproc[parent_nr_n].time_slice;
 		break;
 		
@@ -251,12 +281,16 @@ int do_start_scheduling(message *m_ptr)
 /*===========================================================================*
  *				do_nice					     *
  *===========================================================================*/
+
+//se nao pudermos designar novas prioridades para os processos nas filas de 16
+//a 18, damos a eles suas prioridades anteriores
 int do_nice(message *m_ptr)
 {
 	struct schedproc *rmp;
 	int rv;
 	int proc_nr_n;
 	unsigned new_q, old_q, old_max_q;
+	unsigned old_quantum;
 
 	/* check who can send you requests */
 	if (!accept_message(m_ptr))
@@ -277,6 +311,7 @@ int do_nice(message *m_ptr)
 	/* Store old values, in case we need to roll back the changes */
 	old_q     = rmp->priority;
 	old_max_q = rmp->max_priority;
+	old_quantum = rmp->quantum;
 
 	/* Update the proc entry and reschedule the process */
 	rmp->max_priority = rmp->priority = new_q;
@@ -286,6 +321,7 @@ int do_nice(message *m_ptr)
 		 * back the changes to proc struct */
 		rmp->priority     = old_q;
 		rmp->max_priority = old_max_q;
+		rmp->quantum = old_quantum;
 	}
 
 	return rv;
@@ -336,6 +372,8 @@ void init_scheduling(void)
 	int r;
 
 	balance_timeout = BALANCE_TIMEOUT * sys_hz();
+	init_timer(&schedule_timer);
+	set_timer(&schedule_timer, balance_timeout, balance_queues, 0);
 
 	if ((r = sys_setalarm(balance_timeout, 0)) != OK)
 		panic("sys_setalarm failed: %d", r);
@@ -350,19 +388,28 @@ void init_scheduling(void)
  * quantum. This function will find all proccesses that have been bumped down,
  * and pulls them back up. This default policy will soon be changed.
  */
-void balance_queues(void)
+
+//a cada rebalanceamento, aumentamos a prioridade de todos os processos em 1
+void balance_queues(struct timer *tp)
 {
 	struct schedproc *rmp;
 	int r, proc_nr;
 
 	for (proc_nr=0, rmp=schedproc; proc_nr < NR_PROCS; proc_nr++, rmp++) {
 		if (rmp->flags & IN_USE) {
-			if (rmp->priority > rmp->max_priority) {
-				rmp->priority -= 1; /* increase priority */
+			if((rmp->priority >= MAX_USER_Q)&&(rmp->priority <= MIN_USER_Q)){
+				rmp->quantum = 0;
+				rmp->priority = MAX_USER_Q;
+				schedule_process_local(rmp)
+
+			}else if(rmp->priority > rmp->max_priority){
+				rmp->priority -= 1;
 				schedule_process_local(rmp);
 			}
 		}
 	}
+
+	set_timer(&schedule_timer, balance_timeout, balance_queues, 0);
 
 	if ((r = sys_setalarm(balance_timeout, 0)) != OK)
 		panic("sys_setalarm failed: %d", r);
