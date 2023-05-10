@@ -115,7 +115,7 @@ int do_noquantum(message *m_ptr)
 
 		}else if(rmp->quantum == 35){
 			rmp->quantum = 0;
-			rmp->priority = MAX_USER_Q
+			rmp->priority = MAX_USER_Q;
 			printf("Processo %d consumiu Quantum 20 e Prioridade %d\n", rmp->endpoint, rmp->priority);
 		}
 	}
