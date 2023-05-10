@@ -400,7 +400,7 @@ void balance_queues(struct timer *tp)
 			if((rmp->priority >= MAX_USER_Q)&&(rmp->priority <= MIN_USER_Q)){
 				rmp->quantum = 0;
 				rmp->priority = MAX_USER_Q;
-				schedule_process_local(rmp)
+				schedule_process_local(rmp);
 
 			}else if(rmp->priority > rmp->max_priority){
 				rmp->priority -= 1;
