@@ -12,7 +12,7 @@
 #include <assert.h>
 #include <minix/com.h>
 #include <machine/archtypes.h>
-#include "kernel/proc.h"		//constantes das filas
+//#include "kernel/proc.h"		constantes das filas
 
 static timer_t schedule_timer;
 static unsigned balance_timeout;
@@ -20,7 +20,7 @@ static unsigned balance_timeout;
 //tempo entre balanceamentos (5 -> 10)
 #define BALANCE_TIMEOUT	10 /* how often to balance queues in seconds */
 
-static void balance_queues(struct timer *tp);
+//static void balance_queues(struct timer *tp);
 static int schedule_process(struct schedproc * rmp, unsigned flags);
 
 #define SCHEDULE_CHANGE_PRIO	0x1
@@ -390,7 +390,7 @@ void init_scheduling(void)
  */
 
 //a cada rebalanceamento, aumentamos a prioridade de todos os processos em 1
-void balance_queues(struct timer *tp)
+void balance_queues()
 {
 	struct schedproc *rmp;
 	int r, proc_nr;
