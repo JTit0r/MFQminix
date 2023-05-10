@@ -372,8 +372,8 @@ void init_scheduling(void)
 	int r;
 
 	balance_timeout = BALANCE_TIMEOUT * sys_hz();
-	init_timer(&schedule_timer);
-	set_timer(&schedule_timer, balance_timeout, balance_queues, 0);
+	//init_timer(&schedule_timer);
+	//set_timer(&schedule_timer, balance_timeout, balance_queues, 0);
 
 	if ((r = sys_setalarm(balance_timeout, 0)) != OK)
 		panic("sys_setalarm failed: %d", r);
@@ -383,7 +383,7 @@ void init_scheduling(void)
  *				balance_queues				     *
  *===========================================================================*/
 
-/* This function in called every N ticks to rebalance the queues. The current
+/* This function in called every 100 ticks to rebalance the queues. The current
  * scheduler bumps processes down one priority when ever they run out of
  * quantum. This function will find all proccesses that have been bumped down,
  * and pulls them back up. This default policy will soon be changed.
@@ -409,7 +409,7 @@ void balance_queues()
 		}
 	}
 
-	set_timer(&schedule_timer, balance_timeout, balance_queues, 0);
+	//set_timer(&schedule_timer, balance_timeout, balance_queues, 0);
 
 	if ((r = sys_setalarm(balance_timeout, 0)) != OK)
 		panic("sys_setalarm failed: %d", r);
