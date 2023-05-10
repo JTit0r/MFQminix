@@ -14,7 +14,7 @@
 #include <machine/archtypes.h>
 //#include "kernel/proc.h"		constantes das filas
 
-static timer_t schedule_timer;
+//static timer_t schedule_timer;
 static unsigned balance_timeout;
 
 //tempo entre balanceamentos (5 -> 10)
