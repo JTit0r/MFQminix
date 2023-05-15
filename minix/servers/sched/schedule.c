@@ -12,15 +12,12 @@
 #include <assert.h>
 #include <minix/com.h>
 #include <machine/archtypes.h>
-//#include "kernel/proc.h"		constantes das filas
 
-//static timer_t schedule_timer;
 static unsigned balance_timeout;
 
 //tempo entre balanceamentos (5 -> 10)
 #define BALANCE_TIMEOUT	10 /* how often to balance queues in seconds */
 
-//static void balance_queues(struct timer *tp);
 static int schedule_process(struct schedproc * rmp, unsigned flags);
 
 #define SCHEDULE_CHANGE_PRIO	0x1
@@ -106,17 +103,17 @@ int do_noquantum(message *m_ptr)
 	if((rmp->priority >= MAX_USER_Q)&&(rmp->priority <= MIN_USER_Q)){
 		rmp->quantum += 1;
 		if(rmp->quantum == 5){
-			rmp->priority = USER_Q;
 			printf("Processo %d consumiu Quantum 5 e Prioridade %d\n", rmp->endpoint, rmp->priority);
+			rmp->priority = USER_Q;
 
 		}else if(rmp->quantum == 15){
-			rmp->priority = MIN_USER_Q;
 			printf("Processo %d consumiu Quantum 10 e Prioridade %d\n", rmp->endpoint, rmp->priority);
+			rmp->priority = MIN_USER_Q;
 
 		}else if(rmp->quantum == 35){
+			printf("Processo %d consumiu Quantum 20 e Prioridade %d\n", rmp->endpoint, rmp->priority);
 			rmp->quantum = 0;
 			rmp->priority = MAX_USER_Q;
-			printf("Processo %d consumiu Quantum 20 e Prioridade %d\n", rmp->endpoint, rmp->priority);
 		}
 	}
 	else if(rmp->priority < MAX_USER_Q - 1){
@@ -372,8 +369,6 @@ void init_scheduling(void)
 	int r;
 
 	balance_timeout = BALANCE_TIMEOUT * sys_hz();
-	//init_timer(&schedule_timer);
-	//set_timer(&schedule_timer, balance_timeout, balance_queues, 0);
 
 	if ((r = sys_setalarm(balance_timeout, 0)) != OK)
 		panic("sys_setalarm failed: %d", r);
@@ -408,8 +403,6 @@ void balance_queues()
 			}
 		}
 	}
-
-	//set_timer(&schedule_timer, balance_timeout, balance_queues, 0);
 
 	if ((r = sys_setalarm(balance_timeout, 0)) != OK)
 		panic("sys_setalarm failed: %d", r);
