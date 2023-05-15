@@ -55,7 +55,7 @@
 #define NR_MEM_RANGE	20
 
 /* Max. number of IRQs that can be assigned to a process */
-#define NR_IRQ	8		//numero de pedidos de interrupcao (IRQs) 16 -> 8
+#define NR_IRQ	16
 
 /* Max. number of domains (protocol families) per socket driver */
 #define NR_DOMAIN	8
