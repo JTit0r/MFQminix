@@ -102,16 +102,16 @@ int do_noquantum(message *m_ptr)
 	rmp = &schedproc[proc_nr_n];
 	if((rmp->priority >= MAX_USER_Q)&&(rmp->priority <= MIN_USER_Q)){
 		rmp->quantum += 1;
-		if(rmp->quantum == 5){
-			printf("Processo %d consumiu Quantum 5 e Prioridade %d\n", rmp->endpoint, rmp->priority);
+		if(rmp->quantum == 1){
+			//printf("Processo %d consumiu Quantum 5 e Prioridade %d\n", rmp->endpoint, rmp->priority);
 			rmp->priority = USER_Q;
 
-		}else if(rmp->quantum == 15){
-			printf("Processo %d consumiu Quantum 10 e Prioridade %d\n", rmp->endpoint, rmp->priority);
+		}else if(rmp->quantum == 3){
+			//printf("Processo %d consumiu Quantum 10 e Prioridade %d\n", rmp->endpoint, rmp->priority);
 			rmp->priority = MIN_USER_Q;
 
-		}else if(rmp->quantum == 35){
-			printf("Processo %d consumiu Quantum 20 e Prioridade %d\n", rmp->endpoint, rmp->priority);
+		}else if(rmp->quantum == 6){
+			//printf("Processo %d consumiu Quantum 20 e Prioridade %d\n", rmp->endpoint, rmp->priority);
 			rmp->quantum = 0;
 			rmp->priority = MAX_USER_Q;
 		}
